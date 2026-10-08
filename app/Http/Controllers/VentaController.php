@@ -161,4 +161,24 @@ class VentaController extends Controller
 
         return response()->json($sesiones);
     }
+
+    // ELIMINAR UN CONSUMO ERRÓNEO
+    public function eliminarConsumo($id)
+    {
+        $detalle = DetalleVenta::findOrFail($id);
+
+        // Regla de negocio: No se puede eliminar algo que ya fue pagado
+        if ($detalle->estado_pago === 'pagado') {
+            return response()->json(['error' => 'No se puede eliminar un ítem ya pagado'], 403);
+        }
+
+        $venta = Venta::findOrFail($detalle->venta_id);
+
+        // Restar el monto del total de la venta
+        $venta->decrement('total', $detalle->subtotal);
+
+        $detalle->delete();
+
+        return response()->json(['mensaje' => 'Consumo eliminado correctamente']);
+    }
 }

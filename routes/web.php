@@ -33,3 +33,5 @@ Route::get('/api/caja/estado', [CajaController::class, 'estado']);
 Route::post('/api/caja/abrir', [CajaController::class, 'abrir']);
 Route::post('/api/caja/egreso', [CajaController::class, 'registrarEgreso']);
 Route::post('/api/caja/cerrar', [CajaController::class, 'cerrar']);
+Route::delete('/api/ventas/consumos/{id}', [VentaController::class, 'eliminarConsumo']);
+Route::delete('/api/caja/egresos/{id}', [CajaController::class, 'eliminarEgreso']);

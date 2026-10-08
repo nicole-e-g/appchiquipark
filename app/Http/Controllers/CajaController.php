@@ -13,26 +13,25 @@ class CajaController extends Controller
     public function estado()
     {
         $caja = Caja::where('estado', 'abierta')->latest()->first();
+        if (!$caja) return response()->json(['abierta' => false]);
 
-        if (!$caja) {
-            return response()->json(['abierta' => false]);
-        }
+        $pagos = Pago::where('caja_id', $caja->id)->get();
+        $ingresosEfectivo = $pagos->where('metodo', 'efectivo')->sum('monto');
+        $ingresosYape = $pagos->whereIn('metodo', ['yape', 'plin', 'tarjeta'])->sum('monto');
 
-        // Sumar todos los pagos (ventas y abonos) que entraron a esta caja
-        $ingresos = Pago::where('caja_id', $caja->id)->sum('monto');
+        $listaEgresos = MovimientoCaja::where('caja_id', $caja->id)->where('tipo', 'egreso')->get();
+        $egresos = $listaEgresos->sum('monto');
 
-        // Sumar todos los egresos (compras, gastos) de esta caja
-        $egresos = MovimientoCaja::where('caja_id', $caja->id)->where('tipo', 'egreso')->sum('monto');
-
-        // La fórmula sagrada del cierre de caja
-        $totalEsperado = $caja->monto_inicial + $ingresos - $egresos;
+        $efectivoEsperado = $caja->monto_inicial + $ingresosEfectivo - $egresos;
 
         return response()->json([
             'abierta' => true,
             'caja' => $caja,
-            'ingresos' => $ingresos,
+            'ingresos_efectivo' => $ingresosEfectivo,
+            'ingresos_yape' => $ingresosYape,
             'egresos' => $egresos,
-            'total_esperado' => $totalEsperado
+            'lista_egresos' => $listaEgresos, // Nueva variable
+            'efectivo_esperado' => $efectivoEsperado
         ]);
     }
 
@@ -80,5 +79,12 @@ class CajaController extends Controller
         ]);
 
         return response()->json(['mensaje' => 'Caja cerrada. Fin del turno.']);
+    }
+
+    // ELIMINAR UN EGRESO ERRÓNEO
+    public function eliminarEgreso($id)
+    {
+        MovimientoCaja::findOrFail($id)->delete();
+        return response()->json(['mensaje' => 'Egreso anulado']);
     }
 }

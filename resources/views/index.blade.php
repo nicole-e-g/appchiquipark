@@ -215,45 +215,55 @@
 
             <!-- Vista 2: Caja Abierta -->
             <div class="modal-body d-none" id="caja-abierta-view">
-                <div class="row text-center mb-4 g-2">
-                    <div class="col-4">
+                <div class="row text-center mb-3 g-1">
+                    <div class="col-3">
                         <div class="p-2 bg-light border rounded">
                             <small class="text-muted d-block">Base</small>
                             <span class="fw-bold" id="lbl-caja-base">S/ 0.00</span>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <div class="p-2 bg-success text-white rounded">
-                            <small class="d-block">Ingresos</small>
-                            <span class="fw-bold" id="lbl-caja-ingresos">S/ 0.00</span>
+                    <div class="col-3">
+                        <div class="p-2 bg-light border rounded">
+                            <small class="text-success d-block">+ Efectivo</small>
+                            <span class="fw-bold" id="lbl-caja-ingreso-efectivo">S/ 0.00</span>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
+                        <div class="p-2 bg-light border rounded">
+                            <small class="text-primary d-block">Yape/Plin</small>
+                            <span class="fw-bold" id="lbl-caja-yape">S/ 0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
                         <div class="p-2 bg-danger text-white rounded">
-                            <small class="d-block">Egresos</small>
+                            <small class="d-block">- Egresos</small>
                             <span class="fw-bold" id="lbl-caja-egresos">S/ 0.00</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="alert alert-info text-center fs-4">
-                    Total Esperado en Caja<br>
-                    <strong>S/ <span id="lbl-caja-total">0.00</span></strong>
+                <div class="alert alert-success text-center fs-4 shadow-sm border-success mb-3">
+                    Efectivo físico en Cajón<br>
+                    <strong>S/ <span id="lbl-caja-efectivo">0.00</span></strong>
                 </div>
 
-                <hr>
+                <div class="border rounded p-3 text-start mb-2 bg-light">
+                    <h6 class="fw-bold text-secondary">Registrar Salida de Dinero</h6>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="conceptoEgreso" placeholder="Concepto (Ej: Hielo)">
+                        <span class="input-group-text">S/</span>
+                        <input type="number" class="form-control" id="montoEgreso" style="max-width: 100px;">
+                        <button class="btn btn-danger" id="btn-guardar-egreso">Guardar</button>
+                    </div>
+                </div>
 
-                <h6 class="fw-bold text-secondary">Registrar Egreso (Salida de Dinero)</h6>
-                <div class="row g-2 mb-3">
-                    <div class="col-8">
-                        <input type="text" class="form-control" id="conceptoEgreso" placeholder="Ej: Compra de agua">
-                    </div>
-                    <div class="col-4">
-                        <input type="number" class="form-control" id="montoEgreso" placeholder="S/ 0.00">
-                    </div>
-                    <div class="col-12">
-                        <button class="btn btn-outline-danger w-100" id="btn-guardar-egreso">Registrar Egreso</button>
-                    </div>
+                <!-- Historial de Egresos para poder eliminarlos -->
+                <div class="table-responsive" style="max-height: 150px;">
+                    <table class="table table-sm table-hover align-middle mb-0 text-start">
+                        <tbody id="lista-historial-egresos">
+                        <!-- Inyectado por JS -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -313,6 +323,10 @@
         let pagado = parseFloat(sesion.monto_pagado);
         let deuda = total - pagado;
 
+        // Limpiar inputs para no arrastrar datos del niño anterior
+        $('#productoConsumo').prop('selectedIndex', 0);
+        $('#cantidadConsumo').val(1);
+
         // Llenar datos generales
         $('#cuenta-venta-id').val(sesion.id);
         $('#cuenta-nombre').text(sesion.nombre_nino || 'Cliente Rápido');
@@ -322,6 +336,7 @@
         $('#montoPago').val(deuda > 0 ? deuda.toFixed(2) : '');
         $('#btn-cobrar-todo').prop('disabled', deuda <= 0);
 
+        // Limpiar y llenar la tabla de consumos
         // Limpiar y llenar la tabla de consumos
         let htmlDetalles = '';
         if (sesion.detalles && sesion.detalles.length > 0) {
@@ -334,14 +349,21 @@
                 // Extraer el nombre del producto de forma segura
                 let nombreProd = detalle.producto ? detalle.producto.nombre : 'Producto desconocido';
 
+                // --- INICIO DEL CÓDIGO ACTUALIZADO (A) ---
+                // Botón de eliminar (solo si no está pagado)
+                let btnEliminar = detalle.estado_pago === 'pendiente'
+                    ? `<button class="btn btn-sm btn-outline-danger py-0 px-2 ms-2" onclick="eliminarConsumo(${detalle.id}, ${sesion.id})">❌</button>`
+                    : '';
+
                 htmlDetalles += `
-                    <tr>
-                        <td class="text-center fw-bold">${detalle.cantidad}</td>
-                        <td>${nombreProd}</td>
-                        <td class="text-end">S/ ${parseFloat(detalle.subtotal).toFixed(2)}</td>
-                        <td class="text-center">${badgeEstado}</td>
-                    </tr>
-                `;
+            <tr>
+                <td class="text-center fw-bold">${detalle.cantidad}</td>
+                <td>${nombreProd}</td>
+                <td class="text-end">S/ ${parseFloat(detalle.subtotal).toFixed(2)}</td>
+                <td class="text-center">${badgeEstado} ${btnEliminar}</td>
+            </tr>
+        `;
+                // --- FIN DEL CÓDIGO ACTUALIZADO ---
             });
         } else {
             htmlDetalles = '<tr><td colspan="4" class="text-center text-muted">No hay consumos registrados</td></tr>';
@@ -497,15 +519,29 @@
             $('#caja-loading').addClass('d-none');
 
             if (data.abierta) {
-                // Mostrar interfaz de caja abierta con montos reales
                 $('#caja-abierta-view, #caja-footer-abierta').removeClass('d-none');
                 $('#lbl-caja-base').text('S/ ' + parseFloat(data.caja.monto_inicial).toFixed(2));
-                $('#lbl-caja-ingresos').text('S/ ' + parseFloat(data.ingresos).toFixed(2));
+                $('#lbl-caja-ingreso-efectivo').text('S/ ' + parseFloat(data.ingresos_efectivo).toFixed(2));
+                $('#lbl-caja-yape').text('S/ ' + parseFloat(data.ingresos_yape).toFixed(2));
                 $('#lbl-caja-egresos').text('S/ ' + parseFloat(data.egresos).toFixed(2));
-                $('#lbl-caja-total').text(parseFloat(data.total_esperado).toFixed(2));
-            } else {
-                // Mostrar interfaz para abrir caja
-                $('#caja-cerrada-view').removeClass('d-none');
+                $('#lbl-caja-efectivo').text(parseFloat(data.efectivo_esperado).toFixed(2));
+
+                // Dibujar historial de egresos
+                let htmlEgresos = '';
+                if(data.lista_egresos.length > 0) {
+                    data.lista_egresos.forEach(egreso => {
+                        htmlEgresos += `
+                            <tr>
+                                <td>${egreso.concepto}</td>
+                                <td class="text-end fw-bold text-danger">- S/ ${parseFloat(egreso.monto).toFixed(2)}</td>
+                                <td class="text-end"><button class="btn btn-sm btn-outline-secondary py-0" onclick="eliminarEgreso(${egreso.id})">🗑️</button></td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    htmlEgresos = '<tr><td class="text-center text-muted">No hay egresos registrados</td></tr>';
+                }
+                $('#lista-historial-egresos').html(htmlEgresos);
             }
         });
     }
@@ -551,6 +587,35 @@
             });
         }
     });
+
+    // Función global para eliminar consumo
+    window.eliminarConsumo = function(detalleId, ventaId) {
+        if(confirm("¿Anular este consumo?")) {
+            $.ajax({
+                url: `/api/ventas/consumos/${detalleId}`,
+                type: 'DELETE',
+                success: function(res) {
+                    cargarTablero().done(function() {
+                        abrirCuenta(ventaId); // Refresca el modal para mostrar los nuevos totales
+                    });
+                },
+                error: function() { alert("No se pudo anular. Posiblemente ya esté pagado."); }
+            });
+        }
+    }
+
+    // Función global para eliminar egreso
+    window.eliminarEgreso = function(egresoId) {
+        if(confirm("¿Anular este egreso? El monto regresará a la caja.")) {
+            $.ajax({
+                url: `/api/caja/egresos/${egresoId}`,
+                type: 'DELETE',
+                success: function(res) {
+                    consultarCaja(); // Refresca los montos de caja automáticamente
+                }
+            });
+        }
+    }
 </script>
 </body>
 </html>
