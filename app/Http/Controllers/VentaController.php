@@ -15,9 +15,12 @@ class VentaController extends Controller
     public function iniciarSesion(Request $request)
     {
         // Asumimos que la caja 1 está abierta (luego haremos la lógica de cajas)
-        $caja = Caja::firstOrCreate(['estado' => 'abierta'], ['monto_inicial' => 100, 'fecha_apertura' => now()]);
+        $caja = Caja::where('estado', 'abierta')->first();
+        if (!$caja) {
+            return response()->json(['error' => 'Debes abrir la caja antes de registrar una venta.'], 403);
+        }
 
-        $productoTiempo = Producto::find($request->producto_id); // Ej: "30 Minutos"
+        $productoTiempo = Producto::find($request->producto_id);
 
         // Creamos el ticket principal
         $venta = Venta::create([
@@ -65,37 +68,34 @@ class VentaController extends Controller
         return response()->json(['mensaje' => 'Consumo agregado']);
     }
 
-    // 3. EL BOTÓN MÁGICO: COBRAR TODO
+    // 3. EL BOTÓN MÁGICO: COBRAR TODO (Corregido)
     public function cobrarTodo(Request $request, $venta_id)
     {
         $venta = Venta::with('detalles')->findOrFail($venta_id);
 
-        // Filtramos solo lo que falta pagar
-        $detallesPendientes = $venta->detalles()->where('estado_pago', 'pendiente')->get();
-        $montoACobrar = $detallesPendientes->sum('subtotal');
+        // Calculamos la deuda real matemáticamente
+        $montoACobrar = $venta->total - $venta->monto_pagado;
 
         if ($montoACobrar > 0) {
-            // 1. Ingresamos el dinero a la caja
+            // 1. Ingresamos solo el saldo restante a la caja
             Pago::create([
                 'venta_id' => $venta->id,
                 'caja_id' => $venta->caja_id,
                 'monto' => $montoACobrar,
                 'metodo' => $request->metodo_pago ?? 'efectivo'
             ]);
-
-            // 2. Pasamos todos los ítems de 'pendiente' a 'pagado' masivamente
-            $venta->detalles()->where('estado_pago', 'pendiente')->update(['estado_pago' => 'pagado']);
-
-            // 3. Cerramos el ticket principal
-            $venta->update([
-                'monto_pagado' => $venta->monto_pagado + $montoACobrar,
-                'estado' => 'completado'
-            ]);
-
-            return response()->json(['mensaje' => 'Cobro total exitoso', 'cobrado' => $montoACobrar]);
         }
 
-        return response()->json(['mensaje' => 'No hay saldo pendiente por cobrar']);
+        // 2. Pasamos TODOS los ítems a 'pagado' de golpe
+        $venta->detalles()->update(['estado_pago' => 'pagado']);
+
+        // 3. Cerramos el ticket principal, asegurando que el pagado iguale al total
+        $venta->update([
+            'monto_pagado' => $venta->total,
+            'estado' => 'completado'
+        ]);
+
+        return response()->json(['mensaje' => 'Cobro total exitoso', 'cobrado' => $montoACobrar]);
     }
 
     // 4. REGISTRAR UN PAGO ESPECÍFICO (Para pagos mixtos, adelantos o Yape/Plin)
