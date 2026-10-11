@@ -99,45 +99,41 @@ class VentaController extends Controller
     }
 
     // 4. REGISTRAR UN PAGO ESPECÍFICO (Para pagos mixtos, adelantos o Yape/Plin)
-    public function registrarPago(Request $request, $venta_id)
+    public function registrarPago(Request $request, $id)
     {
-        $venta = Venta::findOrFail($venta_id);
-        $montoIngresado = $request->monto; // Ej: S/ 10
-        $metodo = $request->metodo ?? 'efectivo'; // 'yape', 'plin', 'tarjeta', 'efectivo'
+        $venta = Venta::findOrFail($id);
+        $monto = floatval($request->monto);
 
-        // 1. Registramos el ingreso de dinero en la tabla de pagos
+        // 1. Calculamos la deuda real
+        $deudaActual = $venta->total - $venta->monto_pagado;
+
+        // 2. Validaciones estrictas
+        if ($monto <= 0) {
+            return response()->json(['error' => 'El monto debe ser mayor a 0.'], 400);
+        }
+
+        if ($monto > $deudaActual) {
+            return response()->json(['error' => 'El monto ingresado (S/ '.$monto.') supera la deuda actual (S/ '.$deudaActual.').'], 400);
+        }
+
+        // 3. Registrar el pago en la caja
         Pago::create([
             'venta_id' => $venta->id,
             'caja_id' => $venta->caja_id,
-            'monto' => $montoIngresado,
-            'metodo' => $metodo
+            'monto' => $monto,
+            'metodo' => $request->metodo
         ]);
 
-        // 2. Sumamos lo que ya había pagado antes + lo que está pagando ahora
-        $nuevoTotalPagado = $venta->monto_pagado + $montoIngresado;
+        // 4. Actualizamos el monto pagado del ticket
+        $venta->increment('monto_pagado', $monto);
 
-        // 3. Evaluamos si con este pago ya canceló todo el ticket
-        if ($nuevoTotalPagado >= $venta->total) {
-            $estadoTicket = 'completado';
-            // Pasamos todos los consumos a pagados automáticamente
-            $venta->detalles()->update(['estado_pago' => 'pagado']);
-        } else {
-            $estadoTicket = 'parcial';
+        // 5. ¡MAGIA! Si con este pago la deuda llega a cero, cerramos la cuenta automáticamente
+        if ($venta->fresh()->monto_pagado >= $venta->total) {
+            $venta->update(['estado' => 'completado']);
+            $venta->detalles()->update(['estado_pago' => 'pagado']); // Pasa todo a pagado
         }
 
-        // 4. Actualizamos el ticket principal
-        $venta->update([
-            'monto_pagado' => $nuevoTotalPagado,
-            'estado' => $estadoTicket
-        ]);
-
-        $deudaRestante = max(0, $venta->total - $nuevoTotalPagado);
-
-        return response()->json([
-            'mensaje' => 'Pago por S/ ' . $montoIngresado . ' (' . strtoupper($metodo) . ') registrado.',
-            'estado_ticket' => $estadoTicket,
-            'deuda_restante' => $deudaRestante
-        ]);
+        return response()->json(['mensaje' => 'Pago registrado correctamente']);
     }
 
     public function sesionesActivas()

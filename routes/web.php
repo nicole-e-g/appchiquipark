@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\CajaController;
+use App\Http\Controllers\ProductoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,3 +36,9 @@ Route::post('/api/caja/egreso', [CajaController::class, 'registrarEgreso']);
 Route::post('/api/caja/cerrar', [CajaController::class, 'cerrar']);
 Route::delete('/api/ventas/consumos/{id}', [VentaController::class, 'eliminarConsumo']);
 Route::delete('/api/caja/egresos/{id}', [CajaController::class, 'eliminarEgreso']);
+
+// Rutas de Inventario / Productos
+Route::get('/api/productos', [ProductoController::class, 'index']);
+Route::post('/api/productos', [ProductoController::class, 'store']);
+Route::put('/api/productos/{id}', [ProductoController::class, 'update']);
+Route::post('/api/productos/{id}/toggle', [ProductoController::class, 'toggleEstado']);
