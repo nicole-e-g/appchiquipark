@@ -35,7 +35,8 @@ Route::post('/api/caja/abrir', [CajaController::class, 'abrir']);
 Route::post('/api/caja/egreso', [CajaController::class, 'registrarEgreso']);
 Route::post('/api/caja/cerrar', [CajaController::class, 'cerrar']);
 Route::delete('/api/ventas/consumos/{id}', [VentaController::class, 'eliminarConsumo']);
-Route::delete('/api/caja/egresos/{id}', [CajaController::class, 'eliminarEgreso']);
+Route::post('/api/caja/agente', [CajaController::class, 'operacionAgente']);
+Route::delete('/api/caja/movimientos/{id}', [CajaController::class, 'eliminarMovimiento']);
 
 // Rutas de Inventario / Productos
 Route::get('/api/productos', [ProductoController::class, 'index']);

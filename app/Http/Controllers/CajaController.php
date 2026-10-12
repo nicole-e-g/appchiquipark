@@ -9,82 +9,96 @@ use App\Models\Pago;
 
 class CajaController extends Controller
 {
-    // 1. Obtener el estado actual de la caja y sus totales
+    // 1. EL GRAN CÁLCULO DE LAS DOS CAJAS
     public function estado()
     {
         $caja = Caja::where('estado', 'abierta')->latest()->first();
         if (!$caja) return response()->json(['abierta' => false]);
 
+        // Ventas de Chiquipark
         $pagos = Pago::where('caja_id', $caja->id)->get();
-        $ingresosEfectivo = $pagos->where('metodo', 'efectivo')->sum('monto');
-        $ingresosYape = $pagos->whereIn('metodo', ['yape', 'plin', 'tarjeta'])->sum('monto');
+        $ingresosVentasEfectivo = $pagos->where('metodo', 'efectivo')->sum('monto');
+        $ingresosVentasYape = $pagos->whereIn('metodo', ['yape', 'plin', 'tarjeta'])->sum('monto');
 
-        $listaEgresos = MovimientoCaja::where('caja_id', $caja->id)->where('tipo', 'egreso')->get();
-        $egresos = $listaEgresos->sum('monto');
+        // Movimientos Manuales y de Agente
+        $movimientos = MovimientoCaja::where('caja_id', $caja->id)->get();
+        $ingresosMovEfectivo = $movimientos->where('tipo', 'ingreso')->where('metodo', 'efectivo')->sum('monto');
+        $egresosMovEfectivo = $movimientos->where('tipo', 'egreso')->where('metodo', 'efectivo')->sum('monto');
 
-        $efectivoEsperado = $caja->monto_inicial + $ingresosEfectivo - $egresos;
+        $ingresosMovYape = $movimientos->where('tipo', 'ingreso')->where('metodo', 'yape')->sum('monto');
+        $egresosMovYape = $movimientos->where('tipo', 'egreso')->where('metodo', 'yape')->sum('monto');
+
+        // Cuadres Finales
+        $efectivoTotal = $caja->monto_inicial + $ingresosVentasEfectivo + $ingresosMovEfectivo - $egresosMovEfectivo;
+        $yapeTotal = $caja->monto_inicial_yape + $ingresosVentasYape + $ingresosMovYape - $egresosMovYape;
 
         return response()->json([
             'abierta' => true,
             'caja' => $caja,
-            'ingresos_efectivo' => $ingresosEfectivo,
-            'ingresos_yape' => $ingresosYape,
-            'egresos' => $egresos,
-            'lista_egresos' => $listaEgresos, // Nueva variable
-            'efectivo_esperado' => $efectivoEsperado
+            'efectivo_esperado' => $efectivoTotal,
+            'yape_esperado' => $yapeTotal,
+            'lista_movimientos' => $movimientos
         ]);
     }
 
-    // 2. Abrir la caja al inicio del día
     public function abrir(Request $request)
     {
-        // Verificar si ya hay una caja abierta para no duplicar
         $cajaActiva = Caja::where('estado', 'abierta')->first();
-        if ($cajaActiva) {
-            return response()->json(['error' => 'Ya existe una caja abierta'], 400);
-        }
+        if ($cajaActiva) return response()->json(['error' => 'Ya existe una caja abierta'], 400);
 
-        $caja = Caja::create([
+        Caja::create([
             'monto_inicial' => $request->monto_inicial ?? 0,
+            'monto_inicial_yape' => $request->monto_inicial_yape ?? 0,
             'fecha_apertura' => now(),
             'estado' => 'abierta'
         ]);
 
-        return response()->json(['mensaje' => 'Caja abierta exitosamente', 'caja' => $caja]);
+        return response()->json(['mensaje' => 'Caja abierta exitosamente']);
     }
 
-    // 3. Registrar un gasto/egreso (Ej: Comprar agua)
     public function registrarEgreso(Request $request)
     {
         $caja = Caja::where('estado', 'abierta')->firstOrFail();
-
         MovimientoCaja::create([
             'caja_id' => $caja->id,
             'tipo' => 'egreso',
+            'metodo' => $request->metodo, // ¿Pagaste de tu bolsillo o con tu Yape?
             'monto' => $request->monto,
-            'concepto' => $request->concepto // Ej: "Pago proveedor de agua"
+            'concepto' => $request->concepto
         ]);
-
-        return response()->json(['mensaje' => 'Egreso registrado correctamente']);
+        return response()->json(['mensaje' => 'Gasto registrado']);
     }
 
-    // 4. Cerrar la caja al final del turno
-    public function cerrar(Request $request)
+    // 2. LA MAGIA DEL AGENTE (Cruzando dinero)
+    public function operacionAgente(Request $request)
     {
         $caja = Caja::where('estado', 'abierta')->firstOrFail();
+        $monto = floatval($request->monto);
+        $comision = floatval($request->comision);
+        $tipo = $request->tipo_operacion;
 
-        $caja->update([
-            'fecha_cierre' => now(),
-            'estado' => 'cerrada'
-        ]);
+        if ($tipo === 'retiro') {
+            // Cliente necesita billete. Nos Yapea (Monto + Comision) y le damos Efectivo (Monto)
+            MovimientoCaja::create(['caja_id' => $caja->id, 'tipo' => 'ingreso', 'metodo' => 'yape', 'monto' => $monto + $comision, 'concepto' => "Agente: Ingreso Yape (Retiro)"]);
+            MovimientoCaja::create(['caja_id' => $caja->id, 'tipo' => 'egreso', 'metodo' => 'efectivo', 'monto' => $monto, 'concepto' => "Agente: Salida Efectivo (Retiro)"]);
+        } else {
+            // Cliente tiene billete. Nos da Efectivo (Monto + Comision) y le Yapeamos (Monto)
+            MovimientoCaja::create(['caja_id' => $caja->id, 'tipo' => 'ingreso', 'metodo' => 'efectivo', 'monto' => $monto + $comision, 'concepto' => "Agente: Ingreso Efectivo (Depósito)"]);
+            MovimientoCaja::create(['caja_id' => $caja->id, 'tipo' => 'egreso', 'metodo' => 'yape', 'monto' => $monto, 'concepto' => "Agente: Salida Yape (Depósito)"]);
+        }
 
-        return response()->json(['mensaje' => 'Caja cerrada. Fin del turno.']);
+        return response()->json(['mensaje' => 'Operación procesada correctamente']);
     }
 
-    // ELIMINAR UN EGRESO ERRÓNEO
-    public function eliminarEgreso($id)
+    public function eliminarMovimiento($id)
     {
         MovimientoCaja::findOrFail($id)->delete();
-        return response()->json(['mensaje' => 'Egreso anulado']);
+        return response()->json(['mensaje' => 'Anulado']);
+    }
+
+    public function cerrar(Request $request)
+    {
+        Caja::where('estado', 'abierta')->firstOrFail()->update(['fecha_cierre' => now(), 'estado' => 'cerrada']);
+        return response()->json(['mensaje' => 'Caja cerrada.']);
     }
 }
