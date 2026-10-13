@@ -82,7 +82,10 @@
                 <!-- Botones a la derecha -->
                 <div>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-success fw-bold" id="btn-cobrar-todo">Cerrar Cuenta y Cobrar Todo</button>
+                    <!-- El botón para cobrar todo rápido -->
+                    <button type="button" class="btn btn-success fw-bold" id="btn-cobrar-todo">Cobrar Todo</button>
+                    <!-- NUEVO: El botón para sacar al niño del tablero -->
+                    <button type="button" class="btn btn-primary fw-bold" id="btn-finalizar-juego">🏁 Finalizar Juego</button>
                 </div>
             </div>
         </div>

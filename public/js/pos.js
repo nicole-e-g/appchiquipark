@@ -77,6 +77,7 @@ window.abrirCuenta = function(id) {
     $('#metodoPago').prop('disabled', estaPagado);
     $('#btn-registrar-pago').prop('disabled', estaPagado);
     $('#btn-cobrar-todo').prop('disabled', estaPagado);
+    $('#btn-finalizar-juego').prop('disabled', !estaPagado);
 
     // Llenar tabla de consumos
     let htmlDetalles = '';
@@ -546,3 +547,34 @@ window.anularVentaDesdeHistorial = function(id) {
         });
     }
 }
+
+// ---- FINALIZAR JUEGO (Retirar al niño) ----
+$('#btn-finalizar-juego').off('click').on('click', function() {
+    let ventaId = $('#cuenta-venta-id').val();
+    let deudaActual = parseFloat($('#cuenta-deuda').text());
+
+    if (deudaActual > 0) {
+        alert("🚨 No puedes finalizar el juego. El cliente aún debe S/ " + deudaActual.toFixed(2));
+        return;
+    }
+
+    if(confirm("🏁 ¿El tiempo terminó y el niño ya se retira? El ticket desaparecerá del tablero.")) {
+        let btn = $(this);
+        btn.prop('disabled', true).text('Finalizando...');
+
+        $.ajax({
+            url: `/api/ventas/${ventaId}/finalizar`,
+            type: 'POST',
+            success: function() {
+                $('#modalCuenta').modal('hide');
+                cargarTablero();
+                btn.prop('disabled', false).html('🏁 Finalizar Juego');
+            },
+            error: function(err) {
+                let msj = err.responseJSON ? err.responseJSON.error : "Ocurrió un error.";
+                alert("❌ " + msj);
+                btn.prop('disabled', false).html('🏁 Finalizar Juego');
+            }
+        });
+    }
+});

@@ -90,10 +90,10 @@ class VentaController extends Controller
         $venta->detalles()->update(['estado_pago' => 'pagado']);
 
         // 3. Cerramos el ticket principal, asegurando que el pagado iguale al total
-        $venta->update([
-            'monto_pagado' => $venta->total,
-            'estado' => 'completado'
-        ]);
+        //$venta->update([
+            //'monto_pagado' => $venta->total,
+           // 'estado' => 'completado'
+        //]);
 
         return response()->json(['mensaje' => 'Cobro total exitoso', 'cobrado' => $montoACobrar]);
     }
@@ -129,7 +129,7 @@ class VentaController extends Controller
 
         // 5. ¡MAGIA! Si con este pago la deuda llega a cero, cerramos la cuenta automáticamente
         if ($venta->fresh()->monto_pagado >= $venta->total) {
-            $venta->update(['estado' => 'completado']);
+            //$venta->update(['estado' => 'completado']);
             $venta->detalles()->update(['estado_pago' => 'pagado']); // Pasa todo a pagado
         }
 
@@ -225,5 +225,21 @@ class VentaController extends Controller
         // Traemos las ventas ordenadas desde la más reciente
         $ventas = Venta::where('caja_id', $caja->id)->orderBy('id', 'desc')->get();
         return response()->json($ventas);
+    }
+
+    // FINALIZAR EL JUEGO (Retirar al niño del tablero)
+    public function finalizarJuego($id)
+    {
+        $venta = \App\Models\Venta::findOrFail($id);
+
+        // Validamos que no tenga deudas antes de dejarlo ir
+        if ($venta->total > $venta->monto_pagado) {
+            return response()->json(['error' => 'No puedes finalizar el juego. El cliente aún tiene saldo pendiente.'], 403);
+        }
+
+        // Ahora sí, cerramos el ticket y lo sacamos del tablero
+        $venta->update(['estado' => 'completado']);
+
+        return response()->json(['mensaje' => 'Juego finalizado y ticket cerrado.']);
     }
 }
