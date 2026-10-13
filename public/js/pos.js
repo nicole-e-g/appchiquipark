@@ -467,4 +467,82 @@ $(document).ready(function() {
 
     $('#btn-cancelar-edicion').click(function() { limpiarFormularioProducto(); });
 
+    // ---- ANULAR UN TICKET COMPLETO ----
+    $('#btn-anular-ticket').off('click').on('click', function() {
+        let ventaId = $('#cuenta-venta-id').val();
+
+        if(confirm("🚨 ¿Estás totalmente seguro de ANULAR este ticket? Se borrará del tablero por completo y no se podrá recuperar.")) {
+            let btn = $(this);
+            btn.prop('disabled', true).text('Borrando...');
+
+            $.ajax({
+                url: `/api/ventas/${ventaId}/anular`,
+                type: 'DELETE',
+                success: function() {
+                    $('#modalCuenta').modal('hide');
+                    cargarTablero(); // Refresca el tablero para que el ticket desaparezca
+                    btn.prop('disabled', false).html('🗑️ Anular Ticket');
+                },
+                error: function() {
+                    alert("Ocurrió un error al intentar anular el ticket.");
+                    btn.prop('disabled', false).html('🗑️ Anular Ticket');
+                }
+            });
+        }
+    });
+
 });
+
+// ==========================================
+// MÓDULO DE HISTORIAL DE VENTAS
+// ==========================================
+$('#menu-historial').click(function(e) {
+    e.preventDefault();
+    cargarHistorialVentas();
+    $('#modalHistorialVentas').modal('show');
+});
+
+function cargarHistorialVentas() {
+    $('#lista-ventas-hoy').html('<tr><td colspan="5" class="text-center">Cargando...</td></tr>');
+    $.get('/api/ventas/hoy', function(ventas) {
+        let html = '';
+        if(ventas.length === 0) {
+            html = '<tr><td colspan="5" class="text-center text-muted">No hay ventas en este turno</td></tr>';
+        } else {
+            ventas.forEach(v => {
+                let estadoBadge = (v.total <= v.monto_pagado && v.total > 0) || v.estado === 'completado'
+                    ? '<span class="badge bg-success">Pagado</span>'
+                    : '<span class="badge bg-warning text-dark">Pendiente</span>';
+
+                html += `
+                    <tr>
+                        <td class="fw-bold text-muted">#${v.id}</td>
+                        <td class="fw-bold">${v.nombre_nino || 'Venta Libre'}</td>
+                        <td>S/ ${parseFloat(v.total).toFixed(2)}</td>
+                        <td>S/ ${parseFloat(v.monto_pagado).toFixed(2)} <br> ${estadoBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm" onclick="anularVentaDesdeHistorial(${v.id})">Anular Ticket</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+        $('#lista-ventas-hoy').html(html);
+    });
+}
+
+window.anularVentaDesdeHistorial = function(id) {
+    if(confirm("🚨 ¿Estás seguro de anular este ticket? Si ya lo habías cobrado, el dinero se descontará de la caja y deberás devolverle el Efectivo/Yape al cliente.")) {
+        $.ajax({
+            url: `/api/ventas/${id}/anular`,
+            type: 'DELETE',
+            success: function() {
+                cargarHistorialVentas(); // Refrescar la tabla del historial
+                cargarTablero();         // Refrescar el tablero por si era un ticket activo
+                alert("✅ Ticket anulado. Revisa tu Caja, los saldos se han ajustado automáticamente.");
+            },
+            error: function() {
+                alert("No se pudo anular el ticket.");
+            }
+        });
+    }
+}

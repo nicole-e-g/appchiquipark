@@ -41,6 +41,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/api/ventas/consumos/{id}', [VentaController::class, 'eliminarConsumo']);
     Route::post('/api/ventas/{id}/pago', [VentaController::class, 'registrarPago']);
     Route::post('/api/ventas/{id}/cobrar-todo', [VentaController::class, 'cobrarTodo']);
+    Route::delete('/api/ventas/{id}/anular', [VentaController::class, 'anular']);
+    Route::get('/api/ventas/hoy', [VentaController::class, 'ventasHoy']);
 
     // 4. API de Caja y Agente
     Route::get('/api/caja/estado', [CajaController::class, 'estado']);

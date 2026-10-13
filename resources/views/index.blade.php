@@ -43,6 +43,7 @@
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 fs-5 text-center text-lg-start mt-3 mt-lg-0">
                 <li class="nav-item"><a class="nav-link fw-bold" style="color: #fde047;" href="#" id="menu-caja">💰 Caja y Agente</a></li>
                 <li class="nav-item"><a class="nav-link text-white fw-bold" href="#" id="menu-inventario">📦 Inventario</a></li>
+                <li class="nav-item"><a class="nav-link text-white fw-bold" href="#" id="menu-historial">📋 Ventas de Hoy</a></li>
             </ul>
 
             <form action="{{ route('logout') }}" method="POST" class="d-inline ms-lg-3 mt-2 mt-lg-0 text-center">
@@ -65,6 +66,7 @@
 @include('modales.cuenta')
 @include('modales.caja')
 @include('modales.inventario')
+@include('modales.historial')
 
 <!-- TU JAVASCRIPT -->
 <script src="{{ asset('js/pos.js?v=2') }}"></script>

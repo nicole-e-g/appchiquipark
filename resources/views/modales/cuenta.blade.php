@@ -75,9 +75,15 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-danger px-4 fw-bold" id="btn-cobrar-todo">Cerrar Cuenta y Cobrar Todo</button>
+            <div class="modal-footer d-flex justify-content-between w-100">
+                <!-- Botón de anular a la izquierda -->
+                <button type="button" class="btn btn-outline-danger fw-bold" id="btn-anular-ticket">🗑️ Anular Ticket</button>
+
+                <!-- Botones a la derecha -->
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-success fw-bold" id="btn-cobrar-todo">Cerrar Cuenta y Cobrar Todo</button>
+                </div>
             </div>
         </div>
     </div>

@@ -198,4 +198,32 @@ class VentaController extends Controller
 
         return response()->json(['mensaje' => 'Ticket libre creado']);
     }
+
+    // ANULAR / ELIMINAR UN TICKET POR ERROR
+    public function anular($id)
+    {
+        $venta = Venta::findOrFail($id);
+
+        // 1. Borramos los consumos/detalles asociados a este ticket
+        \App\Models\DetalleVenta::where('venta_id', $id)->delete();
+
+        // 2. Si por error se llegó a registrar algún pago parcial, lo borramos para que no descuadre la caja
+        \App\Models\Pago::where('venta_id', $id)->delete();
+
+        // 3. Borramos el ticket principal
+        $venta->delete();
+
+        return response()->json(['mensaje' => 'Ticket anulado correctamente']);
+    }
+
+    // TRAER TODAS LAS VENTAS DEL TURNO ACTUAL (Pagadas y Pendientes)
+    public function ventasHoy()
+    {
+        $caja = Caja::where('estado', 'abierta')->first();
+        if (!$caja) return response()->json([]);
+
+        // Traemos las ventas ordenadas desde la más reciente
+        $ventas = Venta::where('caja_id', $caja->id)->orderBy('id', 'desc')->get();
+        return response()->json($ventas);
+    }
 }
