@@ -22,7 +22,9 @@
         <a class="navbar-brand fw-bold text-white tracking-wide fs-5 fs-md-4" href="#">🎮 CHIQUIPARK</a>
 
         <!-- Botón siempre visible en celular -->
-        <button class="btn btn-success fw-bold px-2 px-md-4 ms-auto me-2" id="btn-nueva-sesion">+ Iniciar Sesión</button>
+        <!-- Botones de Acción directos -->
+        <button class="btn btn-warning fw-bold px-2 px-md-3 ms-auto me-2" id="btn-venta-rapida">🛒 Venta Libre</button>
+        <button class="btn btn-success fw-bold px-2 px-md-3 me-2" id="btn-nueva-sesion">+ Iniciar Sesión</button>
 
         <!-- Botón Hamburguesa restaurado -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal">
@@ -31,7 +33,6 @@
 
         <div class="collapse navbar-collapse" id="menuPrincipal">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 fs-5 text-center text-lg-start mt-3 mt-lg-0">
-                <li class="nav-item"><a class="nav-link active text-info fw-bold" href="#">🎯 Tablero</a></li>
                 <li class="nav-item"><a class="nav-link text-warning fw-bold" href="#" id="menu-caja">💰 Caja y Agente</a></li>
                 <li class="nav-item"><a class="nav-link text-info fw-bold" href="#" id="menu-inventario">📦 Inventario</a></li>
             </ul>

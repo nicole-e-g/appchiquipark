@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Caja extends Model
 {
     use HasFactory;
+
+    protected $fillable = ['monto_inicial', 'monto_inicial_yape', 'fecha_apertura', 'fecha_cierre', 'estado'];
     protected $guarded = [];
     public function movimientos() {
         return $this->hasMany(MovimientoCaja::class);

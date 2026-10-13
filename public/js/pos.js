@@ -24,13 +24,20 @@ function cargarTablero() {
 function dibujarTarjetas() {
     let html = '';
     sesiones.forEach(sesion => {
+        // CÁLCULO DE DEUDA
         let deudaReal = (sesion.total - sesion.monto_pagado).toFixed(2);
+
+        // Si no hay minutos totales, es una venta de mostrador
+        let visualTiempo = (!sesion.minutos_totales || sesion.minutos_totales == 0)
+            ? '<h3 class="text-secondary text-center my-4">🛒 Compra Libre</h3>'
+            : '<h2 class="temporizador display-6 fw-bold text-center my-3">00:00</h2>';
+
         html += `
         <div class="col-md-3 mb-4">
             <div class="card sesion-card" id="card-${sesion.id}" data-inicio="${sesion.inicio_sesion}" data-minutos="${sesion.minutos_totales}">
                 <div class="card-body">
-                    <h5 class="card-title fw-bold">${sesion.nombre_nino || 'Venta Rápida'}</h5>
-                    <h2 class="temporizador display-6 fw-bold text-center my-3">00:00</h2>
+                    <h5 class="card-title fw-bold">${sesion.nombre_nino || 'Cliente'}</h5>
+                    ${visualTiempo}
                     <p class="mb-1">Deuda: S/ <strong>${deudaReal}</strong></p>
                     <hr>
                     <button class="btn btn-primary btn-sm w-100" onclick="abrirCuenta(${sesion.id})">Ver Cuenta / Cobrar</button>
@@ -241,7 +248,6 @@ window.toggleEstadoProducto = function(id) {
     $.post(`/api/productos/${id}/toggle`, function() { cargarProductos(); });
 }
 
-
 // ==========================================
 // 4. EVENTOS (DOCUMENT READY)
 // ==========================================
@@ -250,7 +256,7 @@ $(document).ready(function() {
     // Inicializadores
     cargarTablero();
     cargarProductos();
-    setInterval(cargarTablero, 30000); // Refresco automático
+    setInterval(cargarTablero, 30000);
 
     // Motor del Tiempo
     setInterval(function() {
@@ -285,6 +291,19 @@ $(document).ready(function() {
     $('#btn-nueva-sesion').click(function() {
         $('#nombreNino').val('');
         $('#modalIniciarSesion').modal('show');
+    });
+
+    $('#btn-venta-rapida').click(function() {
+        let btn = $(this);
+        btn.prop('disabled', true).text('...');
+
+        $.post('/api/ventas/rapida', function() {
+            cargarTablero();
+            btn.prop('disabled', false).text('🛒 Venta Libre');
+        }).fail(function(err) {
+            alert(err.responseJSON ? err.responseJSON.error : "Error de conexión");
+            btn.prop('disabled', false).text('🛒 Venta Libre');
+        });
     });
 
     $('#btn-guardar-sesion').click(function() {

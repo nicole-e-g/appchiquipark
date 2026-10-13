@@ -37,6 +37,7 @@ Route::post('/api/caja/cerrar', [CajaController::class, 'cerrar']);
 Route::delete('/api/ventas/consumos/{id}', [VentaController::class, 'eliminarConsumo']);
 Route::post('/api/caja/agente', [CajaController::class, 'operacionAgente']);
 Route::delete('/api/caja/movimientos/{id}', [CajaController::class, 'eliminarMovimiento']);
+Route::post('/api/ventas/rapida', [VentaController::class, 'ventaRapida']);
 
 // Rutas de Inventario / Productos
 Route::get('/api/productos', [ProductoController::class, 'index']);

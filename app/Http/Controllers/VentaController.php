@@ -177,4 +177,25 @@ class VentaController extends Controller
 
         return response()->json(['mensaje' => 'Consumo eliminado correctamente']);
     }
+
+    // CREAR UNA CUENTA PARA VENTA DE MOSTRADOR (Sin tiempo)
+    public function ventaRapida(Request $request)
+    {
+        $caja = Caja::where('estado', 'abierta')->first();
+        if (!$caja) {
+            return response()->json(['error' => 'Debes abrir la bóveda primero.'], 403);
+        }
+
+        $venta = Venta::create([
+            'caja_id' => $caja->id,
+            'tipo' => 'directa',
+            'nombre_nino' => 'Venta Libre',
+            'inicio_sesion' => now(),
+            'total' => 0,
+            'monto_pagado' => 0,
+            'estado' => 'pendiente'
+        ]);
+
+        return response()->json(['mensaje' => 'Ticket libre creado']);
+    }
 }
