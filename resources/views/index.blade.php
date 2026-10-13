@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHIQUIPARK POS</title>
+    <title>CHIQUIPARK</title>
+    <link rel="icon" href="{{ asset('img/chiqui2.png') }}" type="image/png">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Librerías Core -->
@@ -17,25 +18,37 @@
 <body class="bg-light">
 
 <!-- Menú de Navegación Responsive -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark mb-4 shadow" style="background-color: #581c87;">
     <div class="container-fluid px-2 px-md-4">
-        <a class="navbar-brand fw-bold text-white tracking-wide fs-5 fs-md-4" href="#">🎮 CHIQUIPARK</a>
 
-        <!-- Botón siempre visible en celular -->
-        <!-- Botones de Acción directos -->
-        <button class="btn btn-warning fw-bold px-2 px-md-3 ms-auto me-2" id="btn-venta-rapida">🛒 Venta Libre</button>
-        <button class="btn btn-success fw-bold px-2 px-md-3 me-2" id="btn-nueva-sesion">+ Iniciar Sesión</button>
+        <!-- Logo en el Menú -->
+        <a class="navbar-brand fw-bold text-white fs-5 fs-md-4 d-flex align-items-center" href="#">
+            <div style="background-color: white; border-radius: 50%; padding: 2px; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                <img src="{{ asset('img/chiqui2.png') }}" alt="Logo" style="max-height: 35px; max-width: 35px;">
+            </div>
+            CHIQUIPARK
+        </a>
 
-        <!-- Botón Hamburguesa restaurado -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal">
+        <!-- Botón de Venta Libre -->
+        <button class="btn fw-bold px-2 px-md-3 ms-auto me-2 text-white shadow-sm" style="background-color: #e11d48; border:none;" id="btn-venta-rapida">🛒 Venta Libre</button>
+
+        <!-- Botón de Iniciar Sesión -->
+        <button class="btn fw-bold px-2 px-md-3 me-2 text-white shadow-sm" style="background-color: #0ea5e9; border:none;" id="btn-nueva-sesion">+ Iniciar Juego</button>
+
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal">
             <span class="navbar-toggler-icon"></span>
         </button>
 
         <div class="collapse navbar-collapse" id="menuPrincipal">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 fs-5 text-center text-lg-start mt-3 mt-lg-0">
-                <li class="nav-item"><a class="nav-link text-warning fw-bold" href="#" id="menu-caja">💰 Caja y Agente</a></li>
-                <li class="nav-item"><a class="nav-link text-info fw-bold" href="#" id="menu-inventario">📦 Inventario</a></li>
+                <li class="nav-item"><a class="nav-link fw-bold" style="color: #fde047;" href="#" id="menu-caja">💰 Caja y Agente</a></li>
+                <li class="nav-item"><a class="nav-link text-white fw-bold" href="#" id="menu-inventario">📦 Inventario</a></li>
             </ul>
+
+            <form action="{{ route('logout') }}" method="POST" class="d-inline ms-lg-3 mt-2 mt-lg-0 text-center">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-outline-light rounded-pill fw-bold px-3">Salir</button>
+            </form>
         </div>
     </div>
 </nav>
